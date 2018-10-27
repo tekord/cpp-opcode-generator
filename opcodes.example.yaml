@@ -1,0 +1,12 @@
+opcodes:
+  - name: nop
+    code: "0x00"
+
+  - name: b
+    code: "0xA0"
+
+  - name: [bz, b_false, b_zero, b_null] # the first opcode is lead, all others are aliases
+    code: "0xA1"
+
+  - name: [bnz, b_true, b_not_zero, b_not_null] # the first opcode is lead, all others are aliases
+    code: "0xA2"
