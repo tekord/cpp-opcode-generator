@@ -1,0 +1,12 @@
+#pragma once
+
+/**
+ * ATTENTION! This file was generated automatically. Do NOT change it directly!
+ * All direct changes may be overwritten.
+ *
+ * LAST UPDATED AT: ${generated_at}
+ */
+
+enum ${name} {
+${items}
+};

@@ -8,6 +8,7 @@ from time import gmtime, strftime
 
 parser = argparse.ArgumentParser()
 parser.add_argument("input", type=str, help="OpCode definition file path")
+parser.add_argument("template", type=str, help="Template file path")
 parser.add_argument("output", type=str, help="Output file name")
 
 args = parser.parse_args()
@@ -72,46 +73,31 @@ class OpCodeCppListGenerator:
 
 currentTime = strftime("%Y-%m-%d %H:%M:%S %z", gmtime())
 
-cppHeaderFileTemplate = """\
-#pragma once
+# Read definition file
+inputFile = open(args.input, 'r')
+opCodeList = yaml.load(inputFile)
+opCodeList = opCodeList['opcodes']
+inputFile.close()
 
-/**
- * ATTENTION! This file was generated automatically. Do NOT change it directly!
- * All direct changes may be overwritten.
- *
- * Generated at: $generatedAt
- */
-
-$content
-"""
-
-cppEnumerationTemplate = """\
-enum $name {
-$items
-};\
-"""
+# Read template
+templateFile = open(args.template, mode='r')
+templateContent = templateFile.read()
+templateFile.close()
 
 outputFileName = args.output
-inputFileName = args.input
 
 if outputFileName == None:
     outputFileName = '/._opcodes.h'
 
-inputFile = open(inputFileName, 'r')
-
-opCodeList = yaml.load(inputFile)
-opCodeList = opCodeList['opcodes']
 
 opCodesFileGeneratorSettings = {
     "outputFileName": outputFileName,
-    "fileTemplate": cppHeaderFileTemplate,
+    "fileTemplate": templateContent,
     "name": "_GeneratedOpCodes",
     "prefix": "OPCODE_",
 }
 
 with open(opCodesFileGeneratorSettings["outputFileName"], 'w') as f:
-    fileTemplate = Template(opCodesFileGeneratorSettings["fileTemplate"])
-
     cppEnumerationGenerator = OpCodeCppListGenerator()
     cppEnumerationGenerator.prefix = opCodesFileGeneratorSettings["prefix"]
 
@@ -120,13 +106,15 @@ with open(opCodesFileGeneratorSettings["outputFileName"], 'w') as f:
         opCodeList)
     cppEnumerationGenerator.indent.reset()
 
-    enumerationTemplate = Template(cppEnumerationTemplate)
+    result = opCodesFileGeneratorSettings["fileTemplate"];
 
-    f.write(
-        fileTemplate.substitute(
-            generatedAt=currentTime,
-            content=enumerationTemplate.substitute(
-                name=opCodesFileGeneratorSettings["name"],
-                items=renderedItems)))
+    parameters = {
+        "${generated_at}":currentTime,
+        '${name}':opCodesFileGeneratorSettings["name"],
+        '${items}':renderedItems
+    }
 
-inputFile.close()
+    for k, v in parameters.items():
+        result = result.replace(k, v)
+
+    f.write(result)
