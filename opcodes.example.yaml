@@ -1,12 +1,16 @@
 opcodes:
   - name: nop
     code: "0x00"
+    description: "Performs no operation."
 
   - name: b
     code: "0xA0"
+    description: "Unconditional branch."
 
   - name: [bz, b_false, b_zero, b_null] # the first opcode is lead, all others are aliases
     code: "0xA1"
+    description: "Branch if the value on top of the stack equals to zero."
 
   - name: [bnz, b_true, b_not_zero, b_not_null] # the first opcode is lead, all others are aliases
     code: "0xA2"
+    description: "Branch if the value on top of the stack NOT equals to zero."
