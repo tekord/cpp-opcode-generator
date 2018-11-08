@@ -7,12 +7,14 @@ This script generates C++ header file with opcode constants based on YAML file d
 3. Opcode definition is isolated from your virtual machine implementation, so you can use it in non-C++ implementation
 (of course you'll have to modify this script a little bit).
 
+Written on Python 3.
+
 ## Installation
 
-This script uses `pyyaml` package. Make sure this package is installed on your machine. To install it execute the following command:
+Execute the following command to install dependencies:
 
 ```
-pip install pyyaml
+pip3 install -r requirements.txt
 ```
 
 ## Usage
