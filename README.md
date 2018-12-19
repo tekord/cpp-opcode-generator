@@ -2,7 +2,7 @@
 
 This script generates C++ header file with opcode constants based on YAML file definition. It may be useful for virtual machine developers. Defining opcodes in external file instead of direct C++ enum has some advantages:
 
-1. It is easier to read. Definition file contains only relevan information, no C++ code.
+1. It is easier to read. Definition file contains only relevant information, no C++ code.
 2. You can automate the building of documentation.
 3. Opcode definition is isolated from your virtual machine implementation, so you can use it in non-C++ implementation
 (of course you'll have to modify this script a little bit).
