@@ -13,6 +13,7 @@ parser.add_argument("output", type=str, help="Output file name")
 
 args = parser.parse_args()
 
+
 class Indent:
     stepSize = 4
     value = 0
@@ -31,6 +32,7 @@ class Indent:
 
     def generateSpaces(self):
         return " " * (self.stepSize * self.value)
+
 
 class OpCodeCppListGenerator:
     prefix = ''
@@ -71,6 +73,7 @@ class OpCodeCppListGenerator:
         # Do not use 'os.linesep' on Windows. It generates extra line break
         return str.join(',\n', lines)
 
+
 currentTime = strftime("%Y-%m-%d %H:%M:%S %z", gmtime())
 
 # Read definition file
@@ -86,9 +89,8 @@ templateFile.close()
 
 outputFileName = args.output
 
-if outputFileName == None:
+if outputFileName is None:
     outputFileName = '/._opcodes.h'
-
 
 opCodesFileGeneratorSettings = {
     "outputFileName": outputFileName,
