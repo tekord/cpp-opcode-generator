@@ -79,7 +79,7 @@ currentTime = strftime("%Y-%m-%d %H:%M:%S %z", gmtime())
 # Read definition file
 inputFile = open(args.input, 'r')
 opCodeList = yaml.load(inputFile)
-opCodeList = opCodeList['opcodes']
+opCodeList = opCodeList['mnemonics']
 inputFile.close()
 
 # Read template
