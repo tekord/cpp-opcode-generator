@@ -1,9 +1,6 @@
 import argparse
-import os
 import typing
 import yaml
-from enum import Enum
-from string import Template
 from time import gmtime, strftime
 
 parser = argparse.ArgumentParser()
@@ -15,11 +12,9 @@ args = parser.parse_args()
 
 
 class Indent:
-    stepSize = 4
-    value = 0
-
     def __init__(self):
-        pass
+        self.step_size = 4
+        self.value = 0
 
     def increase(self):
         self.value += 1
@@ -30,90 +25,91 @@ class Indent:
     def reset(self):
         self.value = 0
 
-    def generateSpaces(self):
-        return " " * (self.stepSize * self.value)
+    def generate_spaces(self):
+        return " " * (self.step_size * self.value)
 
 
 class OpCodeCppListGenerator:
-    prefix = ''
-    indent = Indent()
+    def __init__(self):
+        self.prefix = ''
+        self.indent = Indent()
 
-    def formatName(self, name):
+    def format_name(self, name):
         return str.upper(name).replace('.', '_')
 
-    def generateKey(self, name):
+    def generate_key(self, name):
         return self.prefix + name
 
-    def generateValue(self, code):
+    def generate_value(self, code):
         return code
 
-    def prepareItems(self, items):
+    def prepare_items(self, items):
         result = []
 
         for i in items:
             if type(i['name']) == type(list()):
-                primaryName = i['name'][0]
+                primary_name = i['name'][0]
 
                 for n in i['name']:
-                    stringToAppend = self.indent.generateSpaces() + self.generateKey(self.formatName(n)) \
-                                     + " = " + self.generateValue(i['code'])
+                    string_to_append = self.indent.generate_spaces() + self.generate_key(self.format_name(n)) \
+                                       + " = " + self.generate_value(i['code'])
 
-                    if (n != primaryName):
-                        stringToAppend += " /* alias for " + self.formatName(primaryName) + " */"
+                    if (n != primary_name):
+                        string_to_append += " /* alias for " + self.format_name(primary_name) + " */"
 
-                    result.append(stringToAppend)
+                    result.append(string_to_append)
             else:
-                result.append(self.indent.generateSpaces() + self.generateKey(self.formatName(i['name'])) + " = " + self.generateValue(i['code']))
+                result.append(self.indent.generate_spaces() + self.generate_key(self.format_name(i['name'])) + " = " + self.generate_value(i['code']))
 
         return result
 
-    def generateEnumerationLines(self, items):
-        lines = self.prepareItems(items)
+    def generate_enumeration_lines(self, items):
+        lines = self.prepare_items(items)
 
-        # Do not use 'os.linesep' on Windows. It generates extra line break
+        # Do not use 'os.linesep' on Windows. It generates an extra line break
         return str.join(',\n', lines)
 
 
-currentTime = strftime("%Y-%m-%d %H:%M:%S %z", gmtime())
+current_time = strftime("%Y-%m-%d %H:%M:%S %z", gmtime())
 
 # Read definition file
-inputFile = open(args.input, 'r')
-opCodeList = yaml.load(inputFile)
-opCodeList = opCodeList['mnemonics']
-inputFile.close()
+input_file = open(args.input, 'r')
+opcode_list = yaml.load(input_file)
+opcode_list = opcode_list['mnemonics']
+input_file.close()
 
 # Read template
-templateFile = open(args.template, mode='r')
-templateContent = templateFile.read()
-templateFile.close()
+template_file = open(args.template, mode='r')
+template_content = template_file.read()
+template_file.close()
 
-outputFileName = args.output
+output_file_name = args.output
 
-if outputFileName is None:
-    outputFileName = '/._opcodes.h'
+if output_file_name is None:
+    output_file_name = '/._opcodes.h'
 
-opCodesFileGeneratorSettings = {
-    "outputFileName": outputFileName,
-    "fileTemplate": templateContent,
+opcodes_file_generator_settings = {
+    "outputFileName": output_file_name,
+    "fileTemplate": template_content,
     "name": "_GeneratedOpCodes",
     "prefix": "OPCODE_",
 }
 
-with open(opCodesFileGeneratorSettings["outputFileName"], 'w') as f:
-    cppEnumerationGenerator = OpCodeCppListGenerator()
-    cppEnumerationGenerator.prefix = opCodesFileGeneratorSettings["prefix"]
+with open(opcodes_file_generator_settings["outputFileName"], 'w') as f:
+    cpp_enumeration_generator = OpCodeCppListGenerator()
+    cpp_enumeration_generator.prefix = opcodes_file_generator_settings["prefix"]
 
-    cppEnumerationGenerator.indent.increase()
-    renderedItems = cppEnumerationGenerator.generateEnumerationLines(
-        opCodeList)
-    cppEnumerationGenerator.indent.reset()
+    cpp_enumeration_generator.indent.increase()
+    renderedItems = cpp_enumeration_generator.generate_enumeration_lines(
+        opcode_list)
+    cpp_enumeration_generator.indent.reset()
 
-    result = opCodesFileGeneratorSettings["fileTemplate"]
+    result = opcodes_file_generator_settings["fileTemplate"]
 
     parameters = {
-        "${generated_at}":currentTime,
-        '${name}':opCodesFileGeneratorSettings["name"],
-        '${items}':renderedItems
+        "${generated_at}": current_time,
+        '${name}': opcodes_file_generator_settings["name"],
+        '${items}': renderedItems
     }
 
     for k, v in parameters.items():
