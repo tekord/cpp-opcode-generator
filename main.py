@@ -1,14 +1,9 @@
 import argparse
-import typing
+import pathlib
 import yaml
-from time import gmtime, strftime
 
-parser = argparse.ArgumentParser()
-parser.add_argument("input", type=str, help="OpCode definition file path")
-parser.add_argument("template", type=str, help="Template file path")
-parser.add_argument("output", type=str, help="Output file name")
-
-args = parser.parse_args()
+from datetime import datetime
+from jinja2 import Environment, FunctionLoader, Template, select_autoescape
 
 
 class Indent:
@@ -25,94 +20,134 @@ class Indent:
     def reset(self):
         self.value = 0
 
-    def generate_spaces(self):
-        return " " * (self.step_size * self.value)
+    def as_string(self, whitespace=" "):
+        return whitespace * (self.step_size * self.value)
 
 
-class OpCodeCppListGenerator:
-    def __init__(self):
-        self.prefix = ''
-        self.indent = Indent()
+def load_template_file_contents(id: str) -> str:
+    with open(pathlib.Path("templates") / id) as f:
+        return f.read()
 
-    def format_name(self, name):
-        return str.upper(name).replace('.', '_')
 
-    def generate_key(self, name):
-        return self.prefix + name
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    parser.add_argument("input", type=str, help="Opcode definition file path")
+    parser.add_argument("template", type=str, help="Template name")
+    parser.add_argument("--output", dest="output", type=str, help="Output file path")
 
-    def generate_value(self, code):
-        return code
+    args = parser.parse_args()
 
-    def prepare_items(self, items):
-        result = []
+    with open(args.input, 'r') as f:
+        opcode_list = yaml.load(f)
+        opcode_list = opcode_list['mnemonics']
+
+    template_environment_variables = {
+        "generated_at": datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S") + " UTC"
+    }
+
+
+    def render_c_lines(items, prefix="") -> str:
+        indent = Indent()
+        indent.increase()
+
+        lines = []
+
+        def format_name(name):
+            return prefix + str.upper(name).replace('.', '_')
+
+        def render_item(name, code):
+            return indent.as_string() + format_name(name) + " = " + code
 
         for i in items:
             if type(i['name']) == type(list()):
                 primary_name = i['name'][0]
 
                 for n in i['name']:
-                    string_to_append = self.indent.generate_spaces() + self.generate_key(self.format_name(n)) \
-                                       + " = " + self.generate_value(i['code'])
+                    string_to_append = render_item(n, i["code"])
 
-                    if (n != primary_name):
-                        string_to_append += " /* alias for " + self.format_name(primary_name) + " */"
+                    if n != primary_name:
+                        string_to_append += " // alias for " + format_name(primary_name)
 
-                    result.append(string_to_append)
+                    lines.append(string_to_append)
             else:
-                result.append(self.indent.generate_spaces() + self.generate_key(self.format_name(i['name'])) + " = " + self.generate_value(i['code']))
+                lines.append(render_item(i["name"], i["code"]))
 
-        return result
+        lines = str.join(',\n', lines)
 
-    def generate_enumeration_lines(self, items):
-        lines = self.prepare_items(items)
-
-        # Do not use 'os.linesep' on Windows. It generates an extra line break
-        return str.join(',\n', lines)
+        return lines
 
 
-current_time = strftime("%Y-%m-%d %H:%M:%S %z", gmtime())
+    def render_c_template(template: Template) -> str:
+        lines = render_c_lines(opcode_list, "OPCODE_")
 
-# Read definition file
-input_file = open(args.input, 'r')
-opcode_list = yaml.load(input_file)
-opcode_list = opcode_list['mnemonics']
-input_file.close()
+        template_variables = {
+            "environment": template_environment_variables,
+            "name": "_GeneratedOpCodes",
+            "lines": lines,
+        }
 
-# Read template
-template_file = open(args.template, mode='r')
-template_content = template_file.read()
-template_file.close()
+        return template.render(**template_variables)
 
-output_file_name = args.output
 
-if output_file_name is None:
-    output_file_name = '/._opcodes.h'
+    def render_cpp_template(template: Template) -> str:
+        lines = render_c_lines(opcode_list, "OPCODE_")
 
-opcodes_file_generator_settings = {
-    "outputFileName": output_file_name,
-    "fileTemplate": template_content,
-    "name": "_GeneratedOpCodes",
-    "prefix": "OPCODE_",
-}
+        template_variables = {
+            "environment": template_environment_variables,
+            "name": "_GeneratedOpCodes",
+            "lines": lines,
+        }
 
-with open(opcodes_file_generator_settings["outputFileName"], 'w') as f:
-    cpp_enumeration_generator = OpCodeCppListGenerator()
-    cpp_enumeration_generator.prefix = opcodes_file_generator_settings["prefix"]
+        return template.render(**template_variables)
 
-    cpp_enumeration_generator.indent.increase()
-    renderedItems = cpp_enumeration_generator.generate_enumeration_lines(
-        opcode_list)
-    cpp_enumeration_generator.indent.reset()
 
-    result = opcodes_file_generator_settings["fileTemplate"]
+    def render_rust_template(template: Template) -> str:
+        lines = render_c_lines(opcode_list)
 
-    parameters = {
-        "${generated_at}": current_time,
-        '${name}': opcodes_file_generator_settings["name"],
-        '${items}': renderedItems
+        template_variables = {
+            "environment": template_environment_variables,
+            "name": "Opcodes",
+            "lines": lines,
+        }
+
+        return template.render(**template_variables)
+
+
+    template_map = {
+        "c": {
+            "template": "c-header.template",
+            "renderer": render_c_template,
+        },
+        "cpp": {
+            "template": "cpp-header.template",
+            "renderer": render_cpp_template,
+        },
+        "rust": {
+            "template": "rust.template",
+            "renderer": render_rust_template,
+        }
     }
 
-    for k, v in parameters.items():
-        result = result.replace(k, v)
+    jinja_environment = Environment(
+        loader=FunctionLoader(load_template_file_contents),
+        autoescape=select_autoescape(),
+        keep_trailing_newline=True
+    )
 
-    f.write(result)
+    requested_template = args.template
+
+    template_descriptor = template_map[requested_template]
+
+    jinja_template = jinja_environment.get_template(template_descriptor["template"])
+
+    result = template_descriptor["renderer"](jinja_template)
+
+    if args.output:
+        output_file_path = pathlib.Path(args.output)
+
+        with open(output_file_path, 'w+') as f:
+            f.write(result)
+    else:
+        print(result)
+
+    exit(0)
