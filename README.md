@@ -1,9 +1,10 @@
 # Opcode constant generator for C, C++ and Rust programming languages
 
-This script generates C++ header file with opcode constants based on YAML file definition. It may be useful for virtual machine developers. Defining opcodes in external file instead of direct C++ enum has some advantages:
+A python script for generating enums with opcode constants based on YAML file definition. It may be useful for 
+virtual machine developers. Defining opcodes in external file instead of direct C++/Rust enum has some advantages:
 
 1. It is easier to read. Definition file contains only relevant information, no C++ code.
-2. You can automate the building of documentation.
+2. You can automate a documentation building.
 3. Opcode definition is isolated from your virtual machine implementation, so you can use it in non-C++ implementation
 (of course you'll have to modify this script a little bit).
 
@@ -14,7 +15,7 @@ Written on Python 3.
 Execute the following command to install dependencies:
 
 ```
-pip3 install -r requirements.txt
+pip install -r requirements.txt
 ```
 
 ## Usage
@@ -22,13 +23,13 @@ pip3 install -r requirements.txt
 Copy the `opcodes.example.yaml` file to your application's folder, define all the opcodes you need in this file. 
 Then run the script with the following arguments:
 
-```shell
+```
 python main.py <opcode-list> <language> [--output path/to/file]
 ```
 
-where `opcode-list` is a path to file with opcodes (.yaml file); `language` is one of the following options: `c`, `cpp`, `rust`;
- `--output` specified the output file path. If the `output` option is not provided then result will be printed to the standard 
- output. 
+where `opcode-list` is a path to file with opcodes (.yaml file); `language` is one of the following options: `c`, 
+`cpp`, `rust`; `--output` specified the output file path. If the `output` option is not provided then result will 
+be printed to the standard output.
  
 The result may look like this:
 
