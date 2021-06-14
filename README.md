@@ -1,4 +1,4 @@
-# Opcode constant generator for C++
+# Opcode constant generator for C, C++ and Rust programming languages
 
 This script generates C++ header file with opcode constants based on YAML file definition. It may be useful for virtual machine developers. Defining opcodes in external file instead of direct C++ enum has some advantages:
 
