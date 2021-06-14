@@ -3,13 +3,13 @@
 
 /**
  * ATTENTION! This file was generated automatically. Do NOT change it directly!
- * All direct changes may be overwritten.
+ * All direct changes will be overwritten.
  *
- * LAST UPDATED AT: ${generated_at}
+ * LAST UPDATED AT: {{ environment.generated_at }}
  */
 
-enum ${name} {
-${items}
+enum {{ name }} {
+{{ lines }}
 };
 
 #endif
