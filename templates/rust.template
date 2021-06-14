@@ -1,3 +1,5 @@
+#[allow(non_camel_case_types)]
+
 //
 // ATTENTION! This file was generated automatically. Do NOT change it directly!
 // All direct changes will be overwritten.
